@@ -24,10 +24,12 @@ describe("API doc tools", () => {
     expect(names).toEqual([
       "diff_api",
       "get_api",
+      "get_source_file",
       "get_wiki_page",
       "list_flavors",
       "list_systems",
       "search_api",
+      "search_source",
       "search_wiki",
     ]);
   });
