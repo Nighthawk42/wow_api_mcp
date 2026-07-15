@@ -18,10 +18,18 @@ beforeAll(async () => {
 });
 
 describe("API doc tools", () => {
-  it("lists all five tools", async () => {
+  it("lists the expected tools", async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
-    expect(names).toEqual(["diff_api", "get_api", "list_flavors", "list_systems", "search_api"]);
+    expect(names).toEqual([
+      "diff_api",
+      "get_api",
+      "get_wiki_page",
+      "list_flavors",
+      "list_systems",
+      "search_api",
+      "search_wiki",
+    ]);
   });
 
   it("list_flavors reports all four flavors with builds", async () => {
