@@ -1,0 +1,56 @@
+{
+  "name": "wow-api-mcp",
+  "version": "0.1.0",
+  "description": "MCP server exposing the World of Warcraft addon API (Blizzard generated documentation, FrameXML source, and Warcraft Wiki) across live, classic, classic_era, and classic_anniversary flavors.",
+  "license": "MIT",
+  "author": "Nighthawk42",
+  "type": "module",
+  "bin": {
+    "wow-api-mcp": "dist/index.js"
+  },
+  "main": "dist/index.js",
+  "files": [
+    "dist",
+    "data"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "ingest": "tsx scripts/ingest.ts",
+    "smoke": "tsx scripts/smoke.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Nighthawk42/wow_api_mcp.git"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "world-of-warcraft",
+    "wow",
+    "addon",
+    "lua",
+    "framexml"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "env-paths": "^4.0.0",
+    "luaparse": "^0.3.1",
+    "minisearch": "^7.2.0",
+    "turndown": "^7.2.4",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/luaparse": "^0.2.13",
+    "@types/node": "^26.1.1",
+    "@types/turndown": "^5.0.6",
+    "tsx": "^4.23.1",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
+  }
+}
