@@ -1,5 +1,5 @@
 {
-  "name": "wow-api-mcp",
+  "name": "@nighthawk42/wow-api-mcp",
   "version": "0.1.0",
   "description": "MCP server exposing the World of Warcraft addon API (Blizzard generated documentation, FrameXML source, and Warcraft Wiki) across live, classic, classic_era, and classic_anniversary flavors.",
   "license": "MIT",
@@ -16,7 +16,11 @@
   "engines": {
     "node": ">=20"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
+    "prepublishOnly": "npm run build && npm test",
     "build": "tsc",
     "dev": "tsx src/index.ts",
     "ingest": "tsx scripts/ingest.ts",
@@ -27,6 +31,10 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Nighthawk42/wow_api_mcp.git"
+  },
+  "homepage": "https://github.com/Nighthawk42/wow_api_mcp#readme",
+  "bugs": {
+    "url": "https://github.com/Nighthawk42/wow_api_mcp/issues"
   },
   "keywords": [
     "mcp",

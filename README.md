@@ -27,18 +27,12 @@ The API documentation is parsed from `Blizzard_APIDocumentationGenerated` — th
 
 ## Install
 
-Requires Node 20+.
-
-```bash
-git clone https://github.com/Nighthawk42/wow_api_mcp
-cd wow_api_mcp
-npm ci && npm run build
-```
+Requires Node 20+. The server is published as [`@nighthawk42/wow-api-mcp`](https://www.npmjs.com/package/@nighthawk42/wow-api-mcp).
 
 **Claude Code**
 
 ```bash
-claude mcp add wow-api -- node /path/to/wow_api_mcp/dist/index.js
+claude mcp add wow-api -- npx -y @nighthawk42/wow-api-mcp
 ```
 
 **Claude Desktop / Cursor / any MCP client** (`mcpServers` JSON):
@@ -47,11 +41,20 @@ claude mcp add wow-api -- node /path/to/wow_api_mcp/dist/index.js
 {
   "mcpServers": {
     "wow-api": {
-      "command": "node",
-      "args": ["/path/to/wow_api_mcp/dist/index.js"]
+      "command": "npx",
+      "args": ["-y", "@nighthawk42/wow-api-mcp"]
     }
   }
 }
+```
+
+**From source**
+
+```bash
+git clone https://github.com/Nighthawk42/wow_api_mcp
+cd wow_api_mcp
+npm ci && npm run build
+claude mcp add wow-api -- node /path/to/wow_api_mcp/dist/index.js
 ```
 
 Notes:
