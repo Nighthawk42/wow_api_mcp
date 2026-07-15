@@ -100,4 +100,8 @@ describe("stripHtml", () => {
   it("removes tags", () => {
     expect(stripHtml('a <b>bold</b> <span class="x">move</span>')).toBe("a bold move");
   });
+
+  it("decodes HTML entities", () => {
+    expect(stripHtml("it&#039;s &lt;fun&gt; &amp; games &#x41;")).toBe("it's <fun> & games A");
+  });
 });

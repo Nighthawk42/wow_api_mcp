@@ -127,8 +127,23 @@ export class WikiClient {
   }
 }
 
+const NAMED_ENTITIES: Record<string, string> = {
+  amp: "&",
+  lt: "<",
+  gt: ">",
+  quot: '"',
+  apos: "'",
+  nbsp: " ",
+};
+
 export function stripHtml(html: string): string {
-  return html.replace(/<[^>]*>/g, "");
+  return html
+    .replace(/<[^>]*>/g, "")
+    .replace(/&(#x?[0-9a-fA-F]+|[a-z]+);/g, (whole, entity: string) => {
+      if (entity.startsWith("#x") || entity.startsWith("#X")) return String.fromCodePoint(parseInt(entity.slice(2), 16));
+      if (entity.startsWith("#")) return String.fromCodePoint(parseInt(entity.slice(1), 10));
+      return NAMED_ENTITIES[entity] ?? whole;
+    });
 }
 
 export function attribution(url: string): string {

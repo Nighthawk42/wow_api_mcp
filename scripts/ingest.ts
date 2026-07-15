@@ -45,6 +45,9 @@ function ingestFlavor(flavor: Flavor): FlavorData {
   console.log(`[${flavor}] updating checkout...`);
   const dir = ensureDocsCheckout(flavor);
   const commit = git(dir, "rev-parse", "HEAD");
+  // Upstream commit date, not wall clock, so re-ingesting unchanged sources
+  // produces byte-identical output (keeps the weekly refresh PR quiet).
+  const commitDate = git(dir, "log", "-1", "--format=%cI");
   const version = fs.readFileSync(path.join(dir, "version.txt"), "utf8").trim();
 
   const docsDir = path.join(dir, DOCS_PATH);
@@ -85,7 +88,7 @@ function ingestFlavor(flavor: Flavor): FlavorData {
       commit,
       version,
       interfaceVersion: interfaceVersionFromBuild(version),
-      generatedAt: new Date().toISOString(),
+      generatedAt: commitDate,
     },
     ...docs,
   };

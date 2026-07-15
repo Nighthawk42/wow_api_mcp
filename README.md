@@ -9,19 +9,65 @@ An [MCP](https://modelcontextprotocol.io) server that gives AI coding assistants
 | `classic_era` | Classic Era (vanilla) | [classic_era](https://github.com/Gethe/wow-ui-source/tree/classic_era) |
 | `classic_anniversary` | Classic Anniversary | [classic_anniversary](https://github.com/Gethe/wow-ui-source/tree/classic_anniversary) |
 
-## Status
+The API documentation is parsed from `Blizzard_APIDocumentationGenerated` — the machine-readable docs Blizzard ships with the client — so every `C_*` function signature, event payload, enum, and structure is exact, typed, and per-flavor. No scraping involved.
 
-🚧 Under construction — milestone 1 (scaffold) of 6.
+## Tools
 
-## Tools (planned v1 surface)
+| Tool | What it does |
+| --- | --- |
+| `list_flavors` | Flavors with game build, interface version, data commit, API counts |
+| `list_systems` | API systems/namespaces per flavor, filterable |
+| `search_api` | Fuzzy full-text search over functions, events, enums, structures |
+| `get_api` | Full signature detail + cross-flavor availability |
+| `diff_api` | Compare an API's existence/signature across all four flavors |
+| `search_wiki` | Search warcraft.wiki.gg (guides, TOC format, widget API, ...) |
+| `get_wiki_page` | Fetch a wiki page as markdown (cached ~24h, CC BY-SA attributed) |
+| `search_source` | Regex search over Blizzard's actual UI source per flavor |
+| `get_source_file` | Read UI source files with line numbers / list directories |
 
-- `list_flavors` — flavors, interface versions, source commits
-- `list_systems` — API systems/namespaces per flavor
-- `search_api` — fuzzy search over functions, events, enums, structures
-- `get_api` — full signature detail with cross-flavor availability
-- `diff_api` — compare an API across all four flavors
-- `search_wiki` / `get_wiki_page` — Warcraft Wiki search and page fetch (live, cached)
-- `search_source` / `get_source_file` — regex search and file reading over Blizzard's UI source
+## Install
+
+Requires Node 20+.
+
+```bash
+git clone https://github.com/Nighthawk42/wow_api_mcp
+cd wow_api_mcp
+npm ci && npm run build
+```
+
+**Claude Code**
+
+```bash
+claude mcp add wow-api -- node /path/to/wow_api_mcp/dist/index.js
+```
+
+**Claude Desktop / Cursor / any MCP client** (`mcpServers` JSON):
+
+```json
+{
+  "mcpServers": {
+    "wow-api": {
+      "command": "node",
+      "args": ["/path/to/wow_api_mcp/dist/index.js"]
+    }
+  }
+}
+```
+
+Notes:
+- The first `search_source`/`get_source_file` call per flavor downloads a ~200 MB source checkout into your OS cache dir (one-time, pinned to the same commit the API data was built from).
+- Wiki pages are fetched on demand and cached for 24 hours.
+
+## Development
+
+```bash
+npm run dev     # run the server from source
+npm test        # vitest (offline)
+npm run smoke   # exercise every tool end-to-end (needs network)
+npm run ingest  # regenerate data/*.json from wow-ui-source
+```
+
+Data is refreshed weekly by a scheduled GitHub Action that opens a PR when upstream changes. See [AGENTS.md](AGENTS.md) for architecture details.
 
 ## Data sources & attribution
 
