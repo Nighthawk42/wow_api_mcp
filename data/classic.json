@@ -2,10 +2,10 @@
 	"meta": {
 		"flavor": "classic",
 		"branch": "classic",
-		"commit": "a2febd420bb9ac011fd0ba796f893ae1b572721b",
-		"version": "5.5.4.68571",
+		"commit": "ad6fa6434fbec37d3e3aa9b212456ffe6f18534c",
+		"version": "5.5.4.68806",
 		"interfaceVersion": 50504,
-		"generatedAt": "2026-07-08T16:00:55Z"
+		"generatedAt": "2026-07-20T22:45:57Z"
 	},
 	"systems": [
 		{
@@ -307,7 +307,7 @@
 			"Namespace": "C_BattleNet",
 			"Environment": "All",
 			"SourceFile": "BattleNetDocumentation.lua",
-			"FunctionCount": 16,
+			"FunctionCount": 17,
 			"EventCount": 0,
 			"TableCount": 2
 		},
@@ -3817,7 +3817,7 @@
 			"Namespace": "C_TransmogOutfitInfo",
 			"Environment": "All",
 			"SourceFile": "TransmogOutfitInfoDocumentation.lua",
-			"FunctionCount": 65,
+			"FunctionCount": 66,
 			"EventCount": 8,
 			"TableCount": 12
 		},
@@ -11391,6 +11391,21 @@
 				}
 			],
 			"QualifiedName": "C_BattleNet.BNCheckBattleTagInviteToRecentAlly",
+			"System": "BattleNet",
+			"Namespace": "C_BattleNet",
+			"SourceFile": "BattleNetDocumentation.lua"
+		},
+		{
+			"Name": "CanToggleHighResTexturesWithoutClientReload",
+			"Type": "Function",
+			"Returns": [
+				{
+					"Name": "canToggle",
+					"Type": "bool",
+					"Nilable": false
+				}
+			],
+			"QualifiedName": "C_BattleNet.CanToggleHighResTexturesWithoutClientReload",
 			"System": "BattleNet",
 			"Namespace": "C_BattleNet",
 			"SourceFile": "BattleNetDocumentation.lua"
@@ -56887,6 +56902,21 @@
 				}
 			],
 			"QualifiedName": "C_TransmogOutfitInfo.IsSlotWeaponSlot",
+			"System": "TransmogOutfitInfo",
+			"Namespace": "C_TransmogOutfitInfo",
+			"SourceFile": "TransmogOutfitInfoDocumentation.lua"
+		},
+		{
+			"Name": "IsTransmogEnabled",
+			"Type": "Function",
+			"Returns": [
+				{
+					"Name": "enabled",
+					"Type": "bool",
+					"Nilable": false
+				}
+			],
+			"QualifiedName": "C_TransmogOutfitInfo.IsTransmogEnabled",
 			"System": "TransmogOutfitInfo",
 			"Namespace": "C_TransmogOutfitInfo",
 			"SourceFile": "TransmogOutfitInfoDocumentation.lua"

@@ -2,10 +2,10 @@
 	"meta": {
 		"flavor": "live",
 		"branch": "live",
-		"commit": "6e96727fd523c80f2cd43dc1c43946b0336f1217",
-		"version": "12.0.7.68453",
+		"commit": "4383ced30106d51b27e3e86d1987f1552f0d259d",
+		"version": "12.0.7.68887",
 		"interfaceVersion": 120007,
-		"generatedAt": "2026-07-07T00:01:12Z"
+		"generatedAt": "2026-07-23T01:01:33Z"
 	},
 	"systems": [
 		{
