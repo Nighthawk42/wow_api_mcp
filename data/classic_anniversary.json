@@ -2,10 +2,10 @@
 	"meta": {
 		"flavor": "classic_anniversary",
 		"branch": "classic_anniversary",
-		"commit": "4cca594e4db26f8addc25b0c08aba144b00d2b67",
-		"version": "2.5.6.68575",
+		"commit": "d6a72ea3cb1942f84396b8cc34de9435fe5c7293",
+		"version": "2.5.6.68941",
 		"interfaceVersion": 20506,
-		"generatedAt": "2026-07-08T21:31:02Z"
+		"generatedAt": "2026-07-28T01:01:05Z"
 	},
 	"systems": [
 		{
@@ -51293,7 +51293,7 @@
 			"Name": "EscapeDecimalNonPrintables",
 			"Type": "Function",
 			"Documentation": [
-				"Returns a string with ASCII control characters (except \\\r\n, \r, and \t) and invalid UTF-8 bytes replaced by decimal escape sequences (e.g. \\127)."
+				"Returns a string with ASCII control characters (except \\\n, \r, and \t) and invalid UTF-8 bytes replaced by decimal escape sequences (e.g. \\127)."
 			],
 			"Arguments": [
 				{
