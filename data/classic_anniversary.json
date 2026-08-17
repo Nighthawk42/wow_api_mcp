@@ -2,10 +2,10 @@
 	"meta": {
 		"flavor": "classic_anniversary",
 		"branch": "classic_anniversary",
-		"commit": "d6a72ea3cb1942f84396b8cc34de9435fe5c7293",
-		"version": "2.5.6.68941",
+		"commit": "e9bbe81652a6a3fddc6fb547c379218341899792",
+		"version": "2.5.6.69110",
 		"interfaceVersion": 20506,
-		"generatedAt": "2026-07-28T01:01:05Z"
+		"generatedAt": "2026-08-05T00:46:05Z"
 	},
 	"systems": [
 		{
