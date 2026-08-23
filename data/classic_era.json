@@ -2,10 +2,10 @@
 	"meta": {
 		"flavor": "classic_era",
 		"branch": "classic_era",
-		"commit": "1cfc906f34d470f9544cbf13489057dd74e7451a",
-		"version": "1.15.9.68940",
+		"commit": "7285babcfa6931f7c4265ce8672fa6d99c7bcaf1",
+		"version": "1.15.9.69109",
 		"interfaceVersion": 11509,
-		"generatedAt": "2026-07-28T01:01:26Z"
+		"generatedAt": "2026-08-05T00:46:13Z"
 	},
 	"systems": [
 		{
