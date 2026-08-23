@@ -2,10 +2,10 @@
 	"meta": {
 		"flavor": "classic",
 		"branch": "classic",
-		"commit": "ee771c39c640884d58d599f6c824f63d055b3ad7",
-		"version": "5.5.4.69155",
+		"commit": "31840c4374f114e6d42789f90d462f0f5dce41cc",
+		"version": "5.5.4.69383",
 		"interfaceVersion": 50504,
-		"generatedAt": "2026-08-06T23:46:19Z"
+		"generatedAt": "2026-08-19T17:31:06Z"
 	},
 	"systems": [
 		{
