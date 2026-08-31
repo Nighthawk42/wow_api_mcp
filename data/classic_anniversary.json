@@ -2,10 +2,10 @@
 	"meta": {
 		"flavor": "classic_anniversary",
 		"branch": "classic_anniversary",
-		"commit": "e9bbe81652a6a3fddc6fb547c379218341899792",
-		"version": "2.5.6.69110",
+		"commit": "d1a0a86b449c78ee352e8851ef4b011add16a2ff",
+		"version": "2.5.6.69546",
 		"interfaceVersion": 20506,
-		"generatedAt": "2026-08-05T00:46:05Z"
+		"generatedAt": "2026-08-28T18:31:08Z"
 	},
 	"systems": [
 		{
@@ -2680,7 +2680,7 @@
 			"SourceFile": "QuestConstantsDocumentation.lua",
 			"FunctionCount": 0,
 			"EventCount": 0,
-			"TableCount": 9
+			"TableCount": 10
 		},
 		{
 			"Name": "QuestConstants_Classic",
@@ -130552,11 +130552,6 @@
 			"Type": "Constants",
 			"Values": [
 				{
-					"Name": "MAX_QUEST_WATCHES",
-					"Type": "number",
-					"Value": 25
-				},
-				{
 					"Name": "MAX_WORLD_QUEST_WATCHES",
 					"Type": "number",
 					"Value": 1
@@ -130568,6 +130563,20 @@
 				}
 			],
 			"QualifiedName": "Constants.QuestWatchConsts_Classic",
+			"System": "QuestConstants",
+			"SourceFile": "QuestConstantsDocumentation.lua"
+		},
+		{
+			"Name": "QuestWatchConsts_ClassicPreWrath",
+			"Type": "Constants",
+			"Values": [
+				{
+					"Name": "MAX_QUEST_WATCHES",
+					"Type": "number",
+					"Value": 5
+				}
+			],
+			"QualifiedName": "Constants.QuestWatchConsts_ClassicPreWrath",
 			"System": "QuestConstants",
 			"SourceFile": "QuestConstantsDocumentation.lua"
 		},
