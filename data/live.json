@@ -2,10 +2,10 @@
 	"meta": {
 		"flavor": "live",
 		"branch": "live",
-		"commit": "8ea15b61e45c0ed4eba01439c90757f86eb78d34",
-		"version": "12.1.0.69587",
+		"commit": "4e3cbb8c5609e4bfc332c0aebbfa4d79731fab59",
+		"version": "12.1.0.69814",
 		"interfaceVersion": 120100,
-		"generatedAt": "2026-09-01T14:15:56Z"
+		"generatedAt": "2026-09-12T19:01:30Z"
 	},
 	"systems": [
 		{
@@ -176630,6 +176630,11 @@
 				{
 					"Name": "containsHousingItem",
 					"Type": "bool",
+					"Nilable": false
+				},
+				{
+					"Name": "deferredGameTimeDays",
+					"Type": "number",
 					"Nilable": false
 				}
 			],
