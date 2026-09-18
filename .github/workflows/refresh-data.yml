@@ -113,29 +113,14 @@ jobs:
   publish:
     # Opt-in: set the AUTO_PUBLISH repository variable to "true" and add an
     # NPM_TOKEN secret to release a patch version whenever the data changes.
+    # The publish itself lives in release.yml so a hand-cut release and an
+    # automated one go through exactly the same steps.
     needs: refresh
     if: needs.refresh.outputs.changed == 'true' && vars.AUTO_PUBLISH == 'true'
-    runs-on: ubuntu-latest
+    uses: ./.github/workflows/release.yml
+    with:
+      bump: auto
+    secrets: inherit
     permissions:
       contents: write
       id-token: write
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          ref: ${{ github.ref_name }}
-      - uses: actions/setup-node@v5
-        with:
-          node-version: 22
-          cache: npm
-          registry-url: https://registry.npmjs.org
-      - run: npm ci
-      - run: npm run build
-      - name: Bump patch version and publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          npm version patch -m "Release v%s (data refresh)"
-          npm publish --provenance
-          git push origin HEAD:${{ github.ref_name }} --follow-tags
