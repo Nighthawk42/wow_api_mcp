@@ -2,6 +2,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createServer } from "../src/server.js";
+import { availableFlavors } from "../src/data/manifest.js";
 
 let client: Client;
 
@@ -17,28 +18,48 @@ beforeAll(async () => {
   await Promise.all([server.connect(serverTransport), client.connect(clientTransport)]);
 });
 
-describe("API doc tools", () => {
+describe("tool registration", () => {
   it("lists the expected tools", async () => {
     const { tools } = await client.listTools();
-    const names = tools.map((t) => t.name).sort();
-    expect(names).toEqual([
+    expect(tools.map((t) => t.name).sort()).toEqual([
+      "check_addon_compatibility",
+      "detect_wow_install",
       "diff_api",
+      "diff_flavors",
       "get_api",
       "get_source_file",
       "get_wiki_page",
       "list_flavors",
+      "list_source_files",
       "list_systems",
+      "resolve_flavor",
       "search_api",
       "search_source",
       "search_wiki",
     ]);
   });
 
-  it("list_flavors reports all four flavors with builds", async () => {
+  it("offers every available flavor in the flavor enum", async () => {
+    const { tools } = await client.listTools();
+    const schema = tools.find((t) => t.name === "search_api")!.inputSchema as any;
+    expect(schema.properties.flavor.enum.sort()).toEqual([...availableFlavors()].sort());
+  });
+});
+
+describe("API doc tools", () => {
+  it("list_flavors reports every ingested track", async () => {
     const text = toolText(await client.callTool({ name: "list_flavors", arguments: {} }));
-    for (const flavor of ["live", "classic", "classic_era", "classic_anniversary"]) {
+    for (const flavor of availableFlavors()) {
       expect(text).toContain(`| ${flavor} |`);
     }
+    expect(text).toContain("| live |");
+    expect(text).toContain("| classic_era |");
+  });
+
+  it("list_flavors can restrict to a game line", async () => {
+    const text = toolText(await client.callTool({ name: "list_flavors", arguments: { line: "retail" } }));
+    expect(text).toContain("| live |");
+    expect(text).not.toContain("| classic_era |");
   });
 
   it("list_systems filters by namespace", async () => {
@@ -66,14 +87,21 @@ describe("API doc tools", () => {
     expect(text).not.toContain("function `");
   });
 
+  it("search_api works against a newly added track", async () => {
+    const text = toolText(
+      await client.callTool({ name: "search_api", arguments: { query: "timer after", flavor: "ptr" } }),
+    );
+    expect(text).toContain("C_Timer.After");
+  });
+
   it("get_api returns full function documentation with availability", async () => {
     const text = toolText(
       await client.callTool({ name: "get_api", arguments: { name: "C_Timer.After", flavor: "live" } }),
     );
     expect(text).toContain("### C_Timer.After");
     expect(text).toContain("**Arguments**");
-    expect(text).toContain("Availability:");
-    expect(text).toContain("live ✓");
+    expect(text).toMatch(/Availability: present in \d+\/\d+/);
+    expect(text).toContain("live");
   });
 
   it("get_api resolves event literals case-insensitively", async () => {
@@ -92,6 +120,17 @@ describe("API doc tools", () => {
     expect(text).toContain("C_Timer.After");
   });
 
+  it("get_api points at other flavors when a retail API is missing", async () => {
+    const text = toolText(
+      await client.callTool({
+        name: "get_api",
+        arguments: { name: "C_DelvesUI.GetActiveDelveTier", flavor: "classic_era" },
+      }),
+    );
+    expect(text).toContain("No API named");
+    expect(text).toContain("Present in other flavors");
+  });
+
   it("diff_api reports per-flavor availability", async () => {
     const text = toolText(await client.callTool({ name: "diff_api", arguments: { name: "C_Timer.After" } }));
     expect(text).toContain("## live");
@@ -104,5 +143,32 @@ describe("API doc tools", () => {
       await client.callTool({ name: "diff_api", arguments: { name: "C_DelvesUI.GetActiveDelveTier" } }),
     );
     expect(text).toMatch(/## classic_era[^#]*Not present/);
+  });
+
+  it("diff_api can be limited to named flavors", async () => {
+    const text = toolText(
+      await client.callTool({ name: "diff_api", arguments: { name: "C_Timer.After", flavors: ["live", "ptr"] } }),
+    );
+    expect(text).toContain("## live");
+    expect(text).toContain("## ptr");
+    expect(text).not.toContain("## classic_era");
+  });
+
+  it("diff_flavors lists APIs retail has that Classic Era lacks", async () => {
+    const text = toolText(
+      await client.callTool({
+        name: "diff_flavors",
+        arguments: { from: "classic_era", to: "live", kind: "function", filter: "C_Delves", direction: "added" },
+      }),
+    );
+    expect(text).toContain("Only in live");
+    expect(text).toContain("C_DelvesUI");
+  });
+
+  it("diff_flavors refuses to diff a flavor against itself", async () => {
+    const text = toolText(
+      await client.callTool({ name: "diff_flavors", arguments: { from: "live", to: "live" } }),
+    );
+    expect(text).toContain("same flavor");
   });
 });

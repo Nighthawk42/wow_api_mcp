@@ -6,6 +6,7 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createServer } from "../src/server.js";
+import { availableFlavors } from "../src/data/manifest.js";
 
 function first(text: string, lines = 6): string {
   return text
@@ -23,16 +24,25 @@ async function main() {
 
   const calls: Array<[string, Record<string, unknown>]> = [
     ["list_flavors", {}],
+    ["list_flavors", { line: "classic_era" }],
     ["list_systems", { flavor: "live", filter: "timer" }],
     ["search_api", { query: "timer after", flavor: "live", limit: 5 }],
     ["get_api", { name: "C_Timer.After", flavor: "live" }],
     ["get_api", { name: "PLAYER_ENTERING_WORLD", flavor: "classic_era" }],
     ["diff_api", { name: "C_AddOns.GetAddOnMetadata" }],
+    ["diff_flavors", { from: "live", to: "ptr2", kind: "function", direction: "added", limit: 10 }],
+    ["detect_wow_install", {}],
+    ["resolve_flavor", { interfaceVersion: 11509 }],
+    ["resolve_flavor", { version: "12.1.0.69814", product: "wow" }],
+    ["check_addon_compatibility", { path: "." }],
     ["search_wiki", { query: "TOC format", limit: 3 }],
     ["get_wiki_page", { title: "TOC format", maxChars: 2000 }],
     ["search_source", { pattern: "SecureActionButtonTemplate", flavor: "classic_era", maxResults: 5 }],
+    ["list_source_files", { glob: "Interface/AddOns/Blizzard_APIDocumentationGenerated/*Timer*", flavor: "classic_era" }],
     ["get_source_file", { path: "Interface/AddOns/Blizzard_APIDocumentationGenerated", flavor: "classic_era" }],
   ];
+
+  console.log(`Flavors available: ${availableFlavors().join(", ")}\n`);
 
   let failures = 0;
   for (const [name, args] of calls) {

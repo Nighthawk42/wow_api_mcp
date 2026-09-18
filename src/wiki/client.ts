@@ -10,10 +10,10 @@ import path from "node:path";
 import envPaths from "env-paths";
 import TurndownService from "turndown";
 import { gfm } from "turndown-plugin-gfm";
+import { USER_AGENT } from "../version.js";
 
 export const WIKI_BASE = "https://warcraft.wiki.gg";
 const API_URL = `${WIKI_BASE}/api.php`;
-const USER_AGENT = "wow-api-mcp/0.1.0 (https://github.com/Nighthawk42/wow_api_mcp)";
 const DEFAULT_TTL_MS = 24 * 60 * 60 * 1000;
 
 export interface WikiSearchResult {
