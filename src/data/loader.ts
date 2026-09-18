@@ -1,11 +1,17 @@
 /**
- * Loads data/<flavor>.json lazily and builds per-flavor search structures:
- * a MiniSearch full-text index and exact-name lookup maps.
+ * Loads flavor payloads on demand and builds per-flavor search structures.
+ *
+ * Loading is two-tier because there are a dozen flavors and each payload is
+ * several megabytes parsed:
+ *   - `loadFlavor` parses the JSON and builds the exact-name lookup maps.
+ *   - `searchFlavor` additionally builds the MiniSearch index, which is the
+ *     expensive part, and only for flavors actually searched.
+ * A small LRU bounds resident memory; `WOW_API_MCP_CACHE_FLAVORS` tunes it.
  */
-import fs from "node:fs";
-import path from "node:path";
 import MiniSearch from "minisearch";
-import { FLAVORS, type ApiEntry, type Flavor, type FlavorData } from "../types.js";
+import type { ApiEntry, Flavor, FlavorData } from "../types.js";
+import { availableFlavors, hasName, hasNameIndex } from "./manifest.js";
+import { flavorFile, readJson } from "./paths.js";
 
 export type EntryKind = "function" | "event" | "table";
 
@@ -18,13 +24,14 @@ export interface IndexedEntry {
 export interface FlavorIndex {
   flavor: Flavor;
   data: FlavorData;
-  mini: MiniSearch;
   byId: Map<string, IndexedEntry>;
   /** Lowercased QualifiedName / Name / LiteralName → entries. */
   byName: Map<string, IndexedEntry[]>;
+  /** Built lazily by `searchIndex`. */
+  mini?: MiniSearch;
 }
 
-const dataDir = path.resolve(import.meta.dirname, "..", "..", "data");
+const MAX_RESIDENT = Math.max(1, Number(process.env.WOW_API_MCP_CACHE_FLAVORS ?? 4) || 4);
 const cache = new Map<Flavor, FlavorIndex>();
 
 /** Splits identifiers on separators and camelCase so "C_Timer.After" and "GetItemInfo" both tokenize naturally. */
@@ -46,42 +53,46 @@ function documentationText(entry: ApiEntry): string {
   return parts.join(" ");
 }
 
+function touch(flavor: Flavor, index: FlavorIndex): FlavorIndex {
+  // Map preserves insertion order: re-inserting moves the entry to the back.
+  cache.delete(flavor);
+  cache.set(flavor, index);
+  while (cache.size > MAX_RESIDENT) {
+    const oldest = cache.keys().next();
+    if (oldest.done || oldest.value === flavor) break;
+    cache.delete(oldest.value);
+  }
+  return index;
+}
+
 export function loadFlavor(flavor: Flavor): FlavorIndex {
   const cached = cache.get(flavor);
-  if (cached) return cached;
+  if (cached) return touch(flavor, cached);
 
-  const file = path.join(dataDir, `${flavor}.json`);
-  const data = JSON.parse(fs.readFileSync(file, "utf8")) as FlavorData;
+  const file = flavorFile(flavor);
+  if (!file) {
+    throw new Error(`Unknown flavor "${flavor}". Available: ${availableFlavors().join(", ")}`);
+  }
+  const data = readJson<FlavorData>(file);
 
   const byId = new Map<string, IndexedEntry>();
   const byName = new Map<string, IndexedEntry[]>();
-  const documents: Array<Record<string, string>> = [];
 
   const addName = (key: string | undefined, indexed: IndexedEntry) => {
     if (!key) return;
     const normalized = key.toLowerCase();
-    const list = byName.get(normalized) ?? [];
-    if (!list.includes(indexed)) {
-      list.push(indexed);
-      byName.set(normalized, list);
-    }
+    const list = byName.get(normalized);
+    if (!list) byName.set(normalized, [indexed]);
+    else if (!list.includes(indexed)) list.push(indexed);
   };
 
   const register = (kind: EntryKind, entries: ApiEntry[]) => {
     entries.forEach((entry, i) => {
-      const id = `${kind}:${entry.QualifiedName}:${i}`;
-      const indexed: IndexedEntry = { id, kind, entry };
-      byId.set(id, indexed);
+      const indexed: IndexedEntry = { id: `${kind}:${entry.QualifiedName}:${i}`, kind, entry };
+      byId.set(indexed.id, indexed);
       addName(entry.QualifiedName, indexed);
       addName(entry.Name, indexed);
       addName(entry.LiteralName, indexed);
-      documents.push({
-        id,
-        name: entry.QualifiedName,
-        shortName: entry.Name ?? "",
-        system: entry.System,
-        text: documentationText(entry),
-      });
     });
   };
 
@@ -89,6 +100,12 @@ export function loadFlavor(flavor: Flavor): FlavorIndex {
   register("event", data.events);
   register("table", data.tables);
 
+  return touch(flavor, { flavor, data, byId, byName });
+}
+
+/** Builds (once per resident load) the full-text index for a flavor. */
+function searchIndex(index: FlavorIndex): MiniSearch {
+  if (index.mini) return index.mini;
   const mini = new MiniSearch({
     fields: ["name", "shortName", "system", "text"],
     storeFields: [],
@@ -100,18 +117,28 @@ export function loadFlavor(flavor: Flavor): FlavorIndex {
       combineWith: "AND",
     },
   });
-  mini.addAll(documents);
-
-  const index: FlavorIndex = { flavor, data, mini, byId, byName };
-  cache.set(flavor, index);
-  return index;
+  mini.addAll(
+    [...index.byId.values()].map(({ id, entry }) => ({
+      id,
+      name: entry.QualifiedName,
+      shortName: entry.Name ?? "",
+      system: entry.System,
+      text: documentationText(entry),
+    })),
+  );
+  index.mini = mini;
+  return mini;
 }
 
-export function searchFlavor(flavor: Flavor, query: string, kind: EntryKind | "any", limit: number): IndexedEntry[] {
+export function searchFlavor(
+  flavor: Flavor,
+  query: string,
+  kind: EntryKind | "any",
+  limit: number,
+): IndexedEntry[] {
   const index = loadFlavor(flavor);
-  const results = index.mini.search(query);
   const hits: IndexedEntry[] = [];
-  for (const result of results) {
+  for (const result of searchIndex(index).search(query)) {
     const indexed = index.byId.get(String(result.id));
     if (!indexed) continue;
     if (kind !== "any" && indexed.kind !== kind) continue;
@@ -125,11 +152,32 @@ export function lookupByName(flavor: Flavor, name: string): IndexedEntry[] {
   return loadFlavor(flavor).byName.get(name.toLowerCase().trim()) ?? [];
 }
 
-/** Which flavors contain an API with this name. */
-export function availability(name: string): Map<Flavor, IndexedEntry[]> {
-  const result = new Map<Flavor, IndexedEntry[]>();
-  for (const flavor of FLAVORS) {
-    result.set(flavor, lookupByName(flavor, name));
+/**
+ * Which flavors contain an API with this name. Uses the pre-built name index
+ * so it never has to parse every flavor payload; falls back to a full load for
+ * flavors missing from the index.
+ */
+export function availability(name: string, flavors: readonly Flavor[] = availableFlavors()): Map<Flavor, boolean> {
+  const result = new Map<Flavor, boolean>();
+  for (const flavor of flavors) {
+    result.set(flavor, hasNameIndex(flavor) ? hasName(flavor, name) : lookupByName(flavor, name).length > 0);
   }
   return result;
+}
+
+/** All entry names in a flavor, deduplicated and lowercased — used by `diff_flavors`. */
+export function entryNames(flavor: Flavor, kind: EntryKind | "any"): Map<string, IndexedEntry> {
+  const index = loadFlavor(flavor);
+  const out = new Map<string, IndexedEntry>();
+  for (const indexed of index.byId.values()) {
+    if (kind !== "any" && indexed.kind !== kind) continue;
+    const key = indexed.entry.QualifiedName;
+    if (key && !out.has(key)) out.set(key, indexed);
+  }
+  return out;
+}
+
+/** Test seam: drop resident flavors. */
+export function resetLoaderCache(): void {
+  cache.clear();
 }

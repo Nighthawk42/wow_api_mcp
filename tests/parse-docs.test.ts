@@ -87,3 +87,18 @@ describe("unescapeLuaString", () => {
     expect(unescapeLuaString("[[raw \\n text]]")).toBe("raw \\n text");
   });
 });
+
+describe("global table assignment", () => {
+  it("resolves a doc table bound to a global, not just a local", () => {
+    const tables = parseDocumentationFile(
+      'Widget = { Name = "Widget", Functions = { { Name = "Poke" } } };\n' +
+        "APIDocumentation:AddDocumentationTable(Widget);\n",
+    );
+    expect(tables).toHaveLength(1);
+    expect(tables[0]).toMatchObject({ Name: "Widget" });
+  });
+
+  it("returns nothing for a file with no AddDocumentationTable call", () => {
+    expect(parseDocumentationFile("local Unused = { Name = 'x' };\n")).toEqual([]);
+  });
+});

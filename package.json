@@ -1,7 +1,7 @@
 {
   "name": "@nighthawk42/wow-api-mcp",
-  "version": "0.1.0",
-  "description": "MCP server exposing the World of Warcraft addon API (Blizzard generated documentation, FrameXML source, and Warcraft Wiki) across live, classic, classic_era, and classic_anniversary flavors.",
+  "version": "0.2.0",
+  "description": "MCP server exposing the World of Warcraft addon API (Blizzard generated documentation, FrameXML source, and Warcraft Wiki) across every wow-ui-source track \u2014 retail, PTR, beta, Classic, Classic Era and Anniversary \u2014 with automatic flavor detection from an installed game client.",
   "license": "MIT",
   "author": "Nighthawk42",
   "type": "module",
@@ -20,13 +20,16 @@
     "access": "public"
   },
   "scripts": {
-    "prepublishOnly": "npm run build && npm test",
+    "prepublishOnly": "npm run build && npm test && npm run verify-data",
     "build": "tsc",
     "dev": "tsx src/index.ts",
     "ingest": "tsx scripts/ingest.ts",
     "smoke": "tsx scripts/smoke.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "update": "powershell -ExecutionPolicy Bypass -File ./update.ps1",
+    "verify-data": "tsx scripts/verify-data.ts",
+    "typecheck": "tsc --noEmit"
   },
   "repository": {
     "type": "git",
@@ -43,7 +46,10 @@
     "wow",
     "addon",
     "lua",
-    "framexml"
+    "framexml",
+    "wow-api",
+    "classic",
+    "warcraft"
   ],
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",

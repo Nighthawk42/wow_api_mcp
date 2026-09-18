@@ -1,34 +1,141 @@
 name: Refresh API data
 
+# Regenerates data/ from every wow-ui-source track and commits straight to
+# main — no pull request to merge by hand. New upstream branches are picked up
+# automatically because scripts/ingest.ts discovers them with `git ls-remote`.
+
 on:
   schedule:
-    - cron: "17 6 * * 1" # Mondays 06:17 UTC
+    - cron: "17 6 * * *" # daily, 06:17 UTC
   workflow_dispatch:
+    inputs:
+      flavors:
+        description: "Space-separated tracks to refresh (blank = all)"
+        required: false
+        default: ""
+      prune:
+        description: "Delete data for branches that vanished upstream"
+        type: boolean
+        required: false
+        default: true
 
 permissions:
   contents: write
-  pull-requests: write
+
+concurrency:
+  group: refresh-data
+  cancel-in-progress: false
 
 jobs:
   refresh:
     runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.commit.outputs.changed }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+        with:
+          # Needed so the follow-up push is attributed and can reach main.
+          persist-credentials: true
+
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
+
       - run: npm ci
-      - run: npm run ingest
-      - run: npm test
-      - name: Create pull request if data changed
-        uses: peter-evans/create-pull-request@v7
+
+      - name: Regenerate data
+        id: ingest
+        env:
+          # Via env, never interpolated into the script: workflow_dispatch input.
+          FLAVORS: ${{ inputs.flavors }}
+          PRUNE: ${{ inputs.prune }}
+        run: |
+          args=""
+          if [ "$PRUNE" != "false" ]; then args="--prune"; fi
+          # shellcheck disable=SC2086 # deliberate word splitting of the track list
+          npm run ingest -- $args $FLAVORS
+
+      - name: Build and test against the new data
+        run: |
+          npm run build
+          npm test
+
+      - name: Commit and push
+        id: commit
+        run: |
+          if git diff --quiet -- data/; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No upstream changes; nothing to commit."
+            exit 0
+          fi
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Summarise which tracks moved, straight from the regenerated manifest.
+          node -e '
+            const { execSync } = require("node:child_process");
+            const read = (ref) => {
+              try { return JSON.parse(execSync(`git show ${ref}:data/_manifest.json`, { encoding: "utf8" })); }
+              catch { return { flavors: [] }; }
+            };
+            const before = new Map(read("HEAD").flavors.map((f) => [f.flavor, f]));
+            const after = JSON.parse(require("node:fs").readFileSync("data/_manifest.json", "utf8"));
+            const lines = [];
+            for (const f of after.flavors) {
+              const prev = before.get(f.flavor);
+              if (!prev) lines.push(`- ${f.flavor}: new track at ${f.version}`);
+              else if (prev.commit !== f.commit) lines.push(`- ${f.flavor}: ${prev.version} -> ${f.version}`);
+            }
+            for (const [id, f] of before) {
+              if (!after.flavors.some((x) => x.flavor === id)) lines.push(`- ${id}: removed upstream (was ${f.version})`);
+            }
+            const body = lines.join("\n") || "- metadata only";
+            require("node:fs").writeFileSync(
+              "/tmp/refresh-message.txt",
+              `Refresh API data from wow-ui-source\n\n${body}\n`,
+            );
+            console.log(body);
+          '
+
+          git add data/
+          git commit -F /tmp/refresh-message.txt
+
+          # Another refresh (or a human push) may have landed meanwhile.
+          for attempt in 1 2 3; do
+            if git push origin HEAD:${{ github.ref_name }}; then exit 0; fi
+            git pull --rebase origin ${{ github.ref_name }} || exit 1
+          done
+          exit 1
+
+  publish:
+    # Opt-in: set the AUTO_PUBLISH repository variable to "true" and add an
+    # NPM_TOKEN secret to release a patch version whenever the data changes.
+    needs: refresh
+    if: needs.refresh.outputs.changed == 'true' && vars.AUTO_PUBLISH == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
         with:
-          add-paths: data/
-          branch: auto/refresh-data
-          commit-message: "Refresh API data from wow-ui-source"
-          title: "Refresh API data from wow-ui-source"
-          body: |
-            Automated weekly regeneration of `data/*.json` from the four
-            wow-ui-source branches. See the per-flavor `meta` blocks for the
-            new builds and commits.
+          ref: ${{ github.ref_name }}
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - run: npm run build
+      - name: Bump patch version and publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          npm version patch -m "Release v%s (data refresh)"
+          npm publish --provenance
+          git push origin HEAD:${{ github.ref_name }} --follow-tags

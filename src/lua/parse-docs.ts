@@ -15,7 +15,9 @@ export function parseDocumentationFile(source: string): Record<string, unknown>[
   const docTables: Record<string, unknown>[] = [];
 
   for (const stmt of ast.body as LuaNode[]) {
-    if (stmt.type === "LocalStatement") {
+    // `local Foo = { ... }` and the plain-global `Foo = { ... }` both bind a
+    // table that a later AddDocumentationTable call refers to by name.
+    if (stmt.type === "LocalStatement" || stmt.type === "AssignmentStatement") {
       const vars: LuaNode[] = stmt.variables;
       const inits: LuaNode[] = stmt.init ?? [];
       vars.forEach((v, i) => {
