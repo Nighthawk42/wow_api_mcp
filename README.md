@@ -139,9 +139,17 @@ npm run ingest -- --prune    # drop data for branches that vanished upstream
 
 Requirements and options:
 
-- The default `GITHUB_TOKEN` needs push access to `main`. If `main` is protected, either allow the `github-actions[bot]` actor to bypass the rule or point the workflow at an unprotected branch.
-- Setting the repository variable `AUTO_PUBLISH=true` and an `NPM_TOKEN` secret makes a data change also bump the patch version and publish to npm with provenance. Off by default.
+- The default `GITHUB_TOKEN` needs push access to `main`. The workflow requests `contents: write` explicitly, which is enough even when the repository's default workflow permission is read-only. If `main` is protected, allow the `github-actions[bot]` actor to bypass the rule.
 - `workflow_dispatch` takes an optional list of tracks and a prune toggle for a manual run.
+
+## Releasing
+
+`.github/workflows/release.yml` publishes to npm with [provenance](https://docs.npmjs.com/generating-provenance-statements). It runs the full gate first — build, typecheck, tests, `verify-data` — then publishes, tags, and pushes.
+
+- **By hand:** run the *Release* workflow. `bump` accepts `auto` (default), `patch`, `minor`, `major`, or `none`. `auto` publishes the version already in `package.json` when the registry doesn't have it yet, and otherwise moves the patch digit along.
+- **Automatically:** set the repository variable `AUTO_PUBLISH=true`. The daily refresh then calls the same workflow whenever the data actually changed, so npm tracks upstream without anyone doing anything.
+
+Both paths need an `NPM_TOKEN` secret (an npm **automation** token — a granular token works too, scoped to this package with read/write). Without it the job logs a warning and stops instead of failing.
 
 ## Data sources & attribution
 

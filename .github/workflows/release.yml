@@ -1,0 +1,136 @@
+name: Release
+
+# Publishes @nighthawk42/wow-api-mcp to npm with provenance.
+#
+# Two ways in:
+#   - workflow_dispatch, to cut a release by hand
+#   - workflow_call, used by refresh-data.yml when the daily data refresh
+#     actually changed something and AUTO_PUBLISH is enabled
+#
+# Requires an NPM_TOKEN secret (an npm automation token). Without it the job
+# warns and stops rather than failing the caller.
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Version bump before publishing"
+        type: choice
+        options: [auto, patch, minor, major, none]
+        default: auto
+  workflow_call:
+    inputs:
+      bump:
+        description: "Version bump before publishing (auto/patch/minor/major/none)"
+        type: string
+        default: auto
+
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # Pick up whatever is at the tip — notably the data commit the refresh
+          # job just pushed, which is newer than the SHA that triggered this run.
+          ref: ${{ github.ref_name }}
+          persist-credentials: true
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - name: Check for an npm token
+        id: creds
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "::warning title=Publish skipped::NPM_TOKEN is not set. Add an npm automation token as a repository secret to enable publishing."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.creds.outputs.ok == 'true'
+        run: npm ci
+
+      - name: Build and verify
+        if: steps.creds.outputs.ok == 'true'
+        run: |
+          npm run build
+          npm run typecheck
+          npm test
+          npm run verify-data
+
+      - name: Decide the version to publish
+        id: version
+        if: steps.creds.outputs.ok == 'true'
+        env:
+          BUMP: ${{ inputs.bump || 'auto' }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          name=$(node -p "require('./package.json').name")
+          current=$(node -p "require('./package.json').version")
+          bump="$BUMP"
+
+          # `auto` publishes the version already in package.json when the
+          # registry does not have it yet (so a hand-edited bump ships as
+          # intended), and otherwise moves the patch digit along.
+          if [ "$bump" = "auto" ]; then
+            if npm view "$name@$current" version >/dev/null 2>&1; then
+              echo "$name@$current is already published; bumping patch."
+              bump=patch
+            else
+              echo "$name@$current is not on the registry; publishing it as-is."
+              bump=none
+            fi
+          fi
+
+          if [ "$bump" != "none" ]; then
+            npm version "$bump" -m "Release v%s"
+            current=$(node -p "require('./package.json').version")
+          else
+            # Still tag it, so every published version is reachable from git.
+            git tag -a "v$current" -m "Release v$current" || true
+          fi
+
+          echo "version=$current" >> "$GITHUB_OUTPUT"
+          echo "Publishing $name@$current"
+
+      - name: Publish to npm
+        if: steps.creds.outputs.ok == 'true'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --provenance --access public
+
+      - name: Push version commit and tag
+        if: steps.creds.outputs.ok == 'true'
+        run: |
+          # The refresh job may have pushed again while npm was publishing.
+          for attempt in 1 2 3; do
+            if git push origin HEAD:${{ github.ref_name }} --follow-tags; then exit 0; fi
+            git pull --rebase origin ${{ github.ref_name }} || exit 1
+          done
+          exit 1
+
+      - name: Summary
+        if: steps.creds.outputs.ok == 'true'
+        run: |
+          {
+            echo "### Published \`v${{ steps.version.outputs.version }}\`"
+            echo ""
+            echo "https://www.npmjs.com/package/@nighthawk42/wow-api-mcp/v/${{ steps.version.outputs.version }}"
+          } >> "$GITHUB_STEP_SUMMARY"
