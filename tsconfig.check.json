@@ -1,0 +1,12 @@
+{
+  // The build config scopes rootDir to src/ so dist/ stays flat; this one type
+  // checks everything else that ships in the repo. `npm run typecheck` uses it,
+  // because scripts/ and tests/ are otherwise invisible to tsc.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": "."
+  },
+  "include": ["src/**/*", "scripts/**/*", "tests/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

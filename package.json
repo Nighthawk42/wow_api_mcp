@@ -29,7 +29,7 @@
     "test:watch": "vitest",
     "update": "powershell -ExecutionPolicy Bypass -File ./update.ps1",
     "verify-data": "tsx scripts/verify-data.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit -p tsconfig.check.json"
   },
   "repository": {
     "type": "git",

@@ -20,21 +20,40 @@ export function flavorFile(flavor: string): string | undefined {
   return undefined;
 }
 
-export function readJson<T>(file: string): T {
+/** Reads a data file as text, transparently gunzipping a `.gz`. */
+export function readText(file: string): string {
   const raw = fs.readFileSync(file);
-  const text = file.endsWith(".gz") ? zlib.gunzipSync(raw).toString("utf8") : raw.toString("utf8");
-  return JSON.parse(text) as T;
+  return file.endsWith(".gz") ? zlib.gunzipSync(raw).toString("utf8") : raw.toString("utf8");
 }
 
-export function writeJson(file: string, value: unknown): void {
-  const text = JSON.stringify(value) + "\n";
-  if (file.endsWith(".gz")) {
-    // Node writes a zero MTIME in the gzip header, so identical input yields
-    // identical bytes and an unchanged track produces no refresh commit.
-    fs.writeFileSync(file, zlib.gzipSync(Buffer.from(text, "utf8"), { level: 9 }));
-  } else {
-    fs.writeFileSync(file, text);
+export function readJson<T>(file: string): T {
+  return JSON.parse(readText(file)) as T;
+}
+
+/**
+ * Writes a data file, skipping the write when the decompressed content already
+ * matches. Returns true when the file actually changed.
+ *
+ * Comparing content rather than bytes is the whole point: gzip output is *not*
+ * stable across zlib builds, so the same input compressed on a Windows dev box
+ * and on the Linux refresh runner differs by a byte or two. Rewriting
+ * unconditionally would make the daily job commit megabytes of churn forever
+ * without a single API having changed.
+ */
+export function writeJson(file: string, value: unknown): boolean {
+  // Small uncompressed files (the manifest) stay pretty-printed so their diffs
+  // are readable in the auto-refresh commits; payloads are minified then gzipped.
+  const text = (file.endsWith(".gz") ? JSON.stringify(value) : JSON.stringify(value, null, 2)) + "\n";
+  try {
+    if (readText(file) === text) return false;
+  } catch {
+    // Missing or unreadable — fall through and write it.
   }
+  fs.writeFileSync(
+    file,
+    file.endsWith(".gz") ? zlib.gzipSync(Buffer.from(text, "utf8"), { level: 9 }) : text,
+  );
+  return true;
 }
 
 /** Flavor IDs present in the data directory, unordered. */
