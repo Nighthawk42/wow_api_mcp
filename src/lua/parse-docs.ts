@@ -9,8 +9,19 @@ import luaparse from "luaparse";
 
 type LuaNode = { type: string; [key: string]: any };
 
+/**
+ * Normalizes line endings before parsing. Blizzard doc strings contain escaped
+ * literal newlines, so a source checked out with CRLF yields a carriage return
+ * inside the parsed string where an LF checkout does not — which would make the
+ * generated data differ by platform. Parsing is line-ending independent because
+ * every entry point runs the source through here first.
+ */
+export function normalizeSource(source: string): string {
+  return source.replace(/\r\n/g, "\n");
+}
+
 export function parseDocumentationFile(source: string): Record<string, unknown>[] {
-  const ast = luaparse.parse(source, { comments: false, luaVersion: "5.1" }) as unknown as LuaNode;
+  const ast = luaparse.parse(normalizeSource(source), { comments: false, luaVersion: "5.1" }) as unknown as LuaNode;
   const localTables = new Map<string, LuaNode>();
   const docTables: Record<string, unknown>[] = [];
 

@@ -45,7 +45,7 @@ function remoteBranches(): string[] {
   return output
     .split("\n")
     .map((line) => line.split("\t")[1]?.replace(/^refs\/heads\//, "").trim())
-    .filter((b): b is string => Boolean(b) && !IGNORED_BRANCHES.has(b));
+    .filter((b): b is string => b !== undefined && b.length > 0 && !IGNORED_BRANCHES.has(b));
 }
 
 function ensureDocsCheckout(branch: string): string {
@@ -57,7 +57,25 @@ function ensureDocsCheckout(branch: string): string {
   } else {
     fs.mkdirSync(ingestRoot, { recursive: true });
     fs.rmSync(dir, { recursive: true, force: true });
-    git(ingestRoot, "clone", "--depth", "1", "--branch", branch, "--filter=blob:none", "--sparse", UPSTREAM_REPO, branch);
+    // Keep the checkout byte-identical on every platform. parseDocumentationFile
+    // normalizes line endings anyway, so this is belt and braces rather than the
+    // guarantee — but it keeps the cache itself comparable across machines.
+    git(
+      ingestRoot,
+      "clone",
+      "-c",
+      "core.autocrlf=false",
+      "-c",
+      "core.eol=lf",
+      "--depth",
+      "1",
+      "--branch",
+      branch,
+      "--filter=blob:none",
+      "--sparse",
+      UPSTREAM_REPO,
+      branch,
+    );
     git(dir, "sparse-checkout", "set", DOCS_PATH);
   }
   return dir;

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
-import { parseDocumentationFile, unescapeLuaString } from "../src/lua/parse-docs.js";
+import { normalizeSource, parseDocumentationFile, unescapeLuaString } from "../src/lua/parse-docs.js";
 import { emptyNormalizedDocs, normalizeDocTables } from "../src/lua/normalize.js";
 
 const fixture = fs.readFileSync(path.resolve(import.meta.dirname, "fixtures", "sample-doc.lua"), "utf8");
@@ -100,5 +100,34 @@ describe("global table assignment", () => {
 
   it("returns nothing for a file with no AddDocumentationTable call", () => {
     expect(parseDocumentationFile("local Unused = { Name = 'x' };\n")).toEqual([]);
+  });
+});
+
+describe("line-ending independence", () => {
+  // Blizzard doc strings contain escaped literal newlines. If git checks the
+  // upstream source out with CRLF, the parsed string picks up a carriage
+  // return, and the generated data then differs between a Windows dev box and
+  // the Linux refresh runner — churning every payload on every run.
+  const lf = [
+    'local T = { Name = "T", Functions = { { Name = "F",',
+    '  Documentation = { "continued \\',
+    'line" } } } };',
+    "APIDocumentation:AddDocumentationTable(T);",
+    "",
+  ].join("\n");
+
+  it("parses identically whether the source uses LF or CRLF", () => {
+    const crlf = lf.replace(/\n/g, "\r\n");
+    expect(crlf).toContain("\r\n");
+    expect(parseDocumentationFile(crlf)).toEqual(parseDocumentationFile(lf));
+  });
+
+  it("leaves no carriage return in the parsed documentation", () => {
+    const [doc] = parseDocumentationFile(lf.replace(/\n/g, "\r\n")) as any[];
+    expect(doc.Functions[0].Documentation[0]).not.toContain("\r");
+  });
+
+  it("normalizeSource only touches CRLF pairs", () => {
+    expect(normalizeSource("a\r\nb\nc\rd")).toBe("a\nb\nc\rd");
   });
 });
