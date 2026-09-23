@@ -1,14 +1,14 @@
 {
   "formatVersion": 2,
-  "generatedAt": "2026-09-18T20:01:27Z",
+  "generatedAt": "2026-09-23T00:37:19Z",
   "flavors": [
     {
       "flavor": "live",
       "branch": "live",
-      "commit": "78282522143e25c3540583734fd192c3d69be910",
-      "version": "12.1.0.69875",
+      "commit": "09b9db7948abc9b9648dedaab51eb0cf3ee67b31",
+      "version": "12.1.0.69933",
       "interfaceVersion": 120100,
-      "generatedAt": "2026-09-18T20:01:27Z",
+      "generatedAt": "2026-09-22T14:31:12Z",
       "counts": {
         "systems": 612,
         "functions": 6338,
@@ -33,13 +33,13 @@
     {
       "flavor": "ptr2",
       "branch": "ptr2",
-      "commit": "f663342f08a6e06060b0d77628abf4e503907e67",
-      "version": "12.1.5.69848",
+      "commit": "5c9363cc1b4e80b98963e3fcc87ab460fa911a94",
+      "version": "12.1.5.69952",
       "interfaceVersion": 120105,
-      "generatedAt": "2026-09-15T23:28:02Z",
+      "generatedAt": "2026-09-22T21:30:39Z",
       "counts": {
         "systems": 622,
-        "functions": 6432,
+        "functions": 6437,
         "events": 1783,
         "tables": 1697
       }
@@ -61,10 +61,10 @@
     {
       "flavor": "classic",
       "branch": "classic",
-      "commit": "ecadf9d3326fa87828cacca7f13c0ab5f41840a6",
-      "version": "5.5.4.69585",
+      "commit": "cde55d0033e89b246381385b2f063cd6c6047ef8",
+      "version": "5.5.4.69934",
       "interfaceVersion": 50504,
-      "generatedAt": "2026-09-01T22:46:07Z",
+      "generatedAt": "2026-09-22T21:31:23Z",
       "counts": {
         "systems": 533,
         "functions": 4590,
@@ -159,10 +159,10 @@
     {
       "flavor": "forever",
       "branch": "forever",
-      "commit": "70ef1b2fd78061a73f886c4a1e79dc5b5cff6d5e",
-      "version": "1.60.1.69913",
+      "commit": "c6e89983189e4f626f549204a23c2d2bea93080a",
+      "version": "1.60.1.69977",
       "interfaceVersion": 16001,
-      "generatedAt": "2026-09-18T03:16:08Z",
+      "generatedAt": "2026-09-23T00:37:19Z",
       "counts": {
         "systems": 638,
         "functions": 6577,
