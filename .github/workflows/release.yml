@@ -1,0 +1,122 @@
+name: Release
+
+# Publishes @nighthawk42/wow-api-mcp to npm with provenance.
+#
+# Two ways in:
+#   - workflow_dispatch, to cut a release by hand
+#   - workflow_call, used by refresh-data.yml when the daily data refresh
+#     actually changed something and AUTO_PUBLISH is enabled
+#
+# Authenticates with npm trusted publishing (OIDC): npm is configured to trust
+# this repository's release.yml, so no long-lived token exists to leak, and the
+# package can require 2FA for every human publish. Needs npm >= 11.5.1 and the
+# `id-token: write` permission below.
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Version bump before publishing"
+        type: choice
+        options: [auto, patch, minor, major, none]
+        default: auto
+  workflow_call:
+    inputs:
+      bump:
+        description: "Version bump before publishing (auto/patch/minor/major/none)"
+        type: string
+        default: auto
+
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # Pick up whatever is at the tip — notably the data commit the refresh
+          # job just pushed, which is newer than the SHA that triggered this run.
+          ref: ${{ github.ref_name }}
+          persist-credentials: true
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      # Trusted publishing needs npm 11.5.1+; Node 22 ships with npm 10.
+      - name: Use an npm that supports trusted publishing
+        run: npm install -g npm@^11.5.1
+
+      - run: npm ci
+
+      - name: Build and verify
+        run: |
+          npm run build
+          npm run typecheck
+          npm test
+          npm run verify-data
+
+      - name: Decide the version to publish
+        id: version
+        env:
+          BUMP: ${{ inputs.bump || 'auto' }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          name=$(node -p "require('./package.json').name")
+          current=$(node -p "require('./package.json').version")
+          bump="$BUMP"
+
+          # `auto` publishes the version already in package.json when the
+          # registry does not have it yet (so a hand-edited bump ships as
+          # intended), and otherwise moves the patch digit along.
+          if [ "$bump" = "auto" ]; then
+            if npm view "$name@$current" version >/dev/null 2>&1; then
+              echo "$name@$current is already published; bumping patch."
+              bump=patch
+            else
+              echo "$name@$current is not on the registry; publishing it as-is."
+              bump=none
+            fi
+          fi
+
+          if [ "$bump" != "none" ]; then
+            npm version "$bump" -m "Release v%s"
+            current=$(node -p "require('./package.json').version")
+          else
+            # Still tag it, so every published version is reachable from git.
+            git tag -a "v$current" -m "Release v$current" || true
+          fi
+
+          echo "version=$current" >> "$GITHUB_OUTPUT"
+          echo "Publishing $name@$current"
+
+      - name: Publish to npm
+        run: npm publish --provenance --access public
+
+      - name: Push version commit and tag
+        run: |
+          # The refresh job may have pushed again while npm was publishing.
+          for attempt in 1 2 3; do
+            if git push origin HEAD:${{ github.ref_name }} --follow-tags; then exit 0; fi
+            git pull --rebase origin ${{ github.ref_name }} || exit 1
+          done
+          exit 1
+
+      - name: Summary
+        run: |
+          {
+            echo "### Published \`v${{ steps.version.outputs.version }}\`"
+            echo ""
+            echo "https://www.npmjs.com/package/@nighthawk42/wow-api-mcp/v/${{ steps.version.outputs.version }}"
+          } >> "$GITHUB_STEP_SUMMARY"

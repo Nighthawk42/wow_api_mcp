@@ -1,0 +1,4 @@
+# Generated data must round-trip byte-for-byte on every platform. Without this,
+# git's autocrlf rewrites `_manifest.json` on Windows checkouts and the Linux
+# refresh job then sees a phantom diff on every run.
+data/** -text
