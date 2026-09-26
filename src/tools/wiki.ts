@@ -1,16 +1,14 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { attribution, WikiClient } from "../wiki/client.js";
-
-function text(body: string) {
-  return { content: [{ type: "text" as const, text: body }] };
-}
+import { errorText, guard, READ_ONLY_NETWORK, text } from "./common.js";
 
 export function registerWikiTools(server: McpServer, client: WikiClient = new WikiClient()): void {
   server.registerTool(
     "search_wiki",
     {
       title: "Search Warcraft Wiki",
+      annotations: READ_ONLY_NETWORK,
       description:
         "Search warcraft.wiki.gg — community documentation for the WoW addon API, UI widgets, events, " +
         "TOC format, CVars, and guides. Returns page titles to use with get_wiki_page.",
@@ -19,18 +17,19 @@ export function registerWikiTools(server: McpServer, client: WikiClient = new Wi
         limit: z.number().int().min(1).max(50).default(10),
       },
     },
-    async ({ query, limit }) => {
+    guard(async ({ query, limit }) => {
       const results = await client.search(query, limit);
       if (results.length === 0) return text(`No wiki results for "${query}".`);
       const lines = results.map((r) => `- **${r.title}** — ${r.snippet} (${r.url})`);
       return text(`${results.length} wiki result(s) for "${query}":\n${lines.join("\n")}`);
-    },
+    }),
   );
 
   server.registerTool(
     "get_wiki_page",
     {
       title: "Get Warcraft Wiki page",
+      annotations: READ_ONLY_NETWORK,
       description:
         "Fetch a warcraft.wiki.gg page as markdown (cached ~24h). Useful pages: \"TOC format\", " +
         '"World of Warcraft API", "Events", "Widget API", "API <FunctionName>" for per-function pages, ' +
@@ -40,7 +39,7 @@ export function registerWikiTools(server: McpServer, client: WikiClient = new Wi
         maxChars: z.number().int().min(1000).max(200_000).default(40_000).describe("Truncate output beyond this length"),
       },
     },
-    async ({ title, maxChars }) => {
+    guard(async ({ title, maxChars }) => {
       try {
         const page = await client.getPage(title, maxChars);
         return text(`# ${page.title}\n\n${page.markdown}\n\n---\n${attribution(page.url)}`);
@@ -51,8 +50,8 @@ export function registerWikiTools(server: McpServer, client: WikiClient = new Wi
           suggestions.length > 0
             ? `\n\nDid you mean:\n${suggestions.map((s) => `- ${s.title}`).join("\n")}`
             : "";
-        return text(`${message}${hint}`);
+        return errorText(`${message}${hint}`);
       }
-    },
+    }),
   );
 }

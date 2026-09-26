@@ -6,10 +6,7 @@ import { detectInstalls, findInstallRoot, type DetectedClient } from "../install
 import { resolveFlavor } from "../install/resolve.js";
 import { readAddonTocs, parseToc } from "../install/toc.js";
 import { interfaceVersionFromBuild } from "../types.js";
-
-function text(body: string) {
-  return { content: [{ type: "text" as const, text: body }] };
-}
+import { guard, READ_ONLY, text } from "./common.js";
 
 function clientLine(client: DetectedClient): string {
   if (!client.clientPresent) {
@@ -33,6 +30,7 @@ export function registerInstallTools(server: McpServer): void {
     "detect_wow_install",
     {
       title: "Detect installed WoW clients",
+      annotations: READ_ONLY,
       description:
         "Find World of Warcraft installations on this machine and report, for each installed client " +
         "(_retail_, _ptr_, _classic_, _classic_era_, ...), its Blizzard product code, exact game build, " +
@@ -49,7 +47,7 @@ export function registerInstallTools(server: McpServer): void {
           ),
       },
     },
-    async ({ path: startPath }) => {
+    guard(async ({ path: startPath }) => {
       const installs = detectInstalls(startPath);
       if (installs.length === 0) {
         const where = startPath ? `at or above \`${startPath}\`` : "in the usual locations";
@@ -72,13 +70,14 @@ export function registerInstallTools(server: McpServer): void {
           "Pass one as the `flavor` argument to search_api / get_api / search_source."
         : "";
       return text(sections.join("\n\n") + footer);
-    },
+    }),
   );
 
   server.registerTool(
     "resolve_flavor",
     {
       title: "Resolve a build to an API flavor",
+      annotations: READ_ONLY,
       description:
         "Work out which API flavor matches a game build, a TOC interface number, a Blizzard product code, " +
         "or a path inside a WoW install / addon folder. Use this when you know what the addon targets " +
@@ -96,7 +95,7 @@ export function registerInstallTools(server: McpServer): void {
           .describe("Path to a `.toc` file, an addon directory, or anywhere inside a WoW install"),
       },
     },
-    async ({ version, interfaceVersion, product, path: inputPath }) => {
+    guard(async ({ version, interfaceVersion, product, path: inputPath }) => {
       const notes: string[] = [];
       let iface = typeof interfaceVersion === "string" ? Number.parseInt(interfaceVersion, 10) : interfaceVersion;
       let build = version;
@@ -175,13 +174,14 @@ export function registerInstallTools(server: McpServer): void {
           .filter((l) => l !== undefined)
           .join("\n"),
       );
-    },
+    }),
   );
 
   server.registerTool(
     "check_addon_compatibility",
     {
       title: "Check an addon's API usage against a flavor",
+      annotations: READ_ONLY,
       description:
         "Read an addon's `.toc` files, resolve the flavor(s) it targets, and report the game build and " +
         "API data the server will use for each. Point it at an addon directory or a `.toc` file.",
@@ -189,7 +189,7 @@ export function registerInstallTools(server: McpServer): void {
         path: z.string().min(1).describe("Addon directory or `.toc` file path"),
       },
     },
-    async ({ path: addonPath }) => {
+    guard(async ({ path: addonPath }) => {
       const toc = addonPath.toLowerCase().endsWith(".toc") ? parseToc(addonPath) : undefined;
       const tocs = toc ? [toc] : readAddonTocs(addonPath);
       if (tocs.length === 0) {
@@ -209,6 +209,6 @@ export function registerInstallTools(server: McpServer): void {
         );
       }
       return text(`${tocs.length} .toc file(s) at \`${addonPath}\`:\n${lines.join("\n")}`);
-    },
+    }),
   );
 }

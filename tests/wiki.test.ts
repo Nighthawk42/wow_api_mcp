@@ -89,6 +89,18 @@ describe("WikiClient", () => {
     expect(page.markdown).toContain("[truncated");
   });
 
+  it("gives up on a stalled request instead of hanging", async () => {
+    const stalled = vi.fn(
+      (_url: string | URL | Request, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () => reject(init.signal!.reason));
+        }),
+    );
+    const client = new WikiClient({ cacheDir, fetchFn: stalled as typeof fetch, timeoutMs: 50 });
+    await expect(client.search("TOC format", 5)).rejects.toThrow(/timed out/);
+    expect(fs.readdirSync(cacheDir)).toEqual([]);
+  });
+
   it("throws a useful error for missing pages", async () => {
     const errorBody = { error: { code: "missingtitle", info: "The page you specified doesn't exist." } };
     const client = new WikiClient({ cacheDir, fetchFn: fakeFetch(errorBody) });

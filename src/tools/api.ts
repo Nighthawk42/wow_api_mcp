@@ -11,7 +11,7 @@ import {
   type EntryKind,
 } from "../data/loader.js";
 import { functionSignature, oneLiner, renderEntry } from "../format.js";
-import { flavorArg, guard, text } from "./common.js";
+import { errorText, flavorArg, guard, READ_ONLY, text } from "./common.js";
 
 /** Compact "present in / missing from" line rather than a row per flavor. */
 function availabilityLine(name: string): string {
@@ -29,6 +29,7 @@ export function registerApiTools(server: McpServer): void {
     "list_flavors",
     {
       title: "List WoW flavors",
+      annotations: READ_ONLY,
       description:
         "List every client flavor (wow-ui-source track) this server carries, with its game build, " +
         "TOC interface version, upstream commit, and API counts. Use it to pick a `flavor` argument.",
@@ -66,6 +67,7 @@ export function registerApiTools(server: McpServer): void {
     "list_systems",
     {
       title: "List API systems",
+      annotations: READ_ONLY,
       description:
         "List API systems (namespaces) for a flavor. Optionally filter by a case-insensitive substring of the system or namespace name.",
       inputSchema: {
@@ -94,6 +96,7 @@ export function registerApiTools(server: McpServer): void {
     "search_api",
     {
       title: "Search WoW API",
+      annotations: READ_ONLY,
       description:
         "Fuzzy full-text search over API functions, events, and tables (enums/structures/constants) for a flavor. " +
         'Searches names, systems, and documentation. Example queries: "C_Timer After", "unit health", "spell cooldown".',
@@ -120,6 +123,7 @@ export function registerApiTools(server: McpServer): void {
     "get_api",
     {
       title: "Get API details",
+      annotations: READ_ONLY,
       description:
         "Full documentation for a function, event, or table by name — signature, typed arguments/returns/payload/fields, " +
         'and cross-flavor availability. Accepts qualified names ("C_Timer.After"), bare names ("After"), ' +
@@ -153,6 +157,7 @@ export function registerApiTools(server: McpServer): void {
     "diff_api",
     {
       title: "Compare one API across flavors",
+      annotations: READ_ONLY,
       description:
         "Compare an API's existence and signature across flavors. Useful to check whether an API exists in a " +
         "given client and whether its signature drifted between retail, classic, and the test realms.",
@@ -166,7 +171,11 @@ export function registerApiTools(server: McpServer): void {
     },
     guard(async ({ name, flavors }) => {
       const all = availableFlavors();
-      const requested = flavors?.filter((f) => all.includes(f));
+      const unknown = flavors?.filter((f) => !all.includes(f)) ?? [];
+      if (unknown.length > 0) {
+        return errorText(`Unknown flavor(s): ${unknown.join(", ")}. Available: ${all.join(", ")}.`);
+      }
+      const requested = flavors;
       const present = all.filter((f) => availability(name, [f]).get(f));
       if (present.length === 0 && !requested?.length) {
         return text(`No API named "${name}" in any flavor (${all.join(", ")}).`);
@@ -207,6 +216,7 @@ export function registerApiTools(server: McpServer): void {
     "diff_flavors",
     {
       title: "Diff two flavors' API surface",
+      annotations: READ_ONLY,
       description:
         "List APIs added or removed between two flavors — e.g. what the retail PTR gained over live, or what " +
         "retail has that Classic Era lacks. Answers 'is this API safe to use on <client>' in bulk.",

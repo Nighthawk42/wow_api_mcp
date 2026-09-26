@@ -39,6 +39,15 @@ describe("tool registration", () => {
     ]);
   });
 
+  it("marks every tool read-only, and only the network ones open-world", async () => {
+    const { tools } = await client.listTools();
+    const network = ["get_source_file", "get_wiki_page", "list_source_files", "search_source", "search_wiki"];
+    for (const tool of tools) {
+      expect(tool.annotations, tool.name).toMatchObject({ readOnlyHint: true, destructiveHint: false });
+      expect(tool.annotations?.openWorldHint, tool.name).toBe(network.includes(tool.name));
+    }
+  });
+
   it("offers every available flavor in the flavor enum", async () => {
     const { tools } = await client.listTools();
     const schema = tools.find((t) => t.name === "search_api")!.inputSchema as any;
@@ -143,6 +152,15 @@ describe("API doc tools", () => {
       await client.callTool({ name: "diff_api", arguments: { name: "C_DelvesUI.GetActiveDelveTier" } }),
     );
     expect(text).toMatch(/## classic_era[^#]*Not present/);
+  });
+
+  it("diff_api rejects unknown flavors instead of silently dropping them", async () => {
+    const result = await client.callTool({
+      name: "diff_api",
+      arguments: { name: "C_Timer.After", flavors: ["live", "retail"] },
+    });
+    expect(result.isError).toBe(true);
+    expect(toolText(result)).toContain("Unknown flavor(s): retail");
   });
 
   it("diff_api can be limited to named flavors", async () => {
