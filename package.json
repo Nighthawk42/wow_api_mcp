@@ -14,7 +14,7 @@
     "data"
   ],
   "engines": {
-    "node": ">=20"
+    "node": ">=20.11"
   },
   "publishConfig": {
     "access": "public"

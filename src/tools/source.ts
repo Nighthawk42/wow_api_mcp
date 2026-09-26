@@ -3,7 +3,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { Flavor } from "../types.js";
 import { flavorMeta } from "../data/manifest.js";
 import { SourceRepoCache } from "../source/repo-cache.js";
-import { flavorArg, guard, text } from "./common.js";
+import { flavorArg, guard, READ_ONLY_NETWORK, text } from "./common.js";
 
 function dataCommit(flavor: Flavor): string {
   const commit = flavorMeta(flavor).commit;
@@ -16,6 +16,7 @@ export function registerSourceTools(server: McpServer, cache: SourceRepoCache = 
     "search_source",
     {
       title: "Search Blizzard UI source",
+      annotations: READ_ONLY_NETWORK,
       description:
         "Regex search (POSIX ERE, via git grep) over Blizzard's FrameXML/AddOn UI source code for a flavor — " +
         "the best way to learn how Blizzard implements UI patterns (templates, mixins, secure code). " +
@@ -36,7 +37,7 @@ export function registerSourceTools(server: McpServer, cache: SourceRepoCache = 
       },
     },
     guard(async ({ pattern, flavor, pathGlob, ignoreCase, fixedString, maxResults }) => {
-      const hits = cache.search(flavor, pattern, dataCommit(flavor), {
+      const hits = await cache.search(flavor, pattern, dataCommit(flavor), {
         pathGlob,
         ignoreCase,
         fixedString,
@@ -59,6 +60,7 @@ export function registerSourceTools(server: McpServer, cache: SourceRepoCache = 
     "list_source_files",
     {
       title: "List Blizzard UI source files",
+      annotations: READ_ONLY_NETWORK,
       description:
         "List source files matching a path glob, e.g. `**/Blizzard_ActionBar*/**` or `**/*Mixin*.lua`. " +
         "Useful for locating the right addon folder before reading files.",
@@ -69,7 +71,7 @@ export function registerSourceTools(server: McpServer, cache: SourceRepoCache = 
       },
     },
     guard(async ({ glob, flavor, limit }) => {
-      const files = cache.listFiles(flavor, glob, dataCommit(flavor), limit);
+      const files = await cache.listFiles(flavor, glob, dataCommit(flavor), limit);
       if (files.length === 0) return text(`No files matching \`${glob}\` in ${flavor} source.`);
       return text(`${files.length} file(s) matching \`${glob}\` in ${flavor}:\n${files.map((f) => `- ${f}`).join("\n")}`);
     }),
@@ -79,6 +81,7 @@ export function registerSourceTools(server: McpServer, cache: SourceRepoCache = 
     "get_source_file",
     {
       title: "Read Blizzard UI source file",
+      annotations: READ_ONLY_NETWORK,
       description:
         "Read a file (or list a directory) from Blizzard's UI source for a flavor, with line numbers. " +
         'Paths are repo-relative, e.g. "Interface/AddOns/Blizzard_UIParent/Blizzard_UIParent.lua".',
@@ -90,7 +93,7 @@ export function registerSourceTools(server: McpServer, cache: SourceRepoCache = 
       },
     },
     guard(async ({ path: filePath, flavor, startLine, endLine }) => {
-      const result = cache.readFile(flavor, filePath, dataCommit(flavor));
+      const result = await cache.readFile(flavor, filePath, dataCommit(flavor));
       if (result.kind === "directory") {
         return text(`Directory ${filePath} in ${flavor} source:\n${result.entries.map((e) => `- ${e}`).join("\n")}`);
       }

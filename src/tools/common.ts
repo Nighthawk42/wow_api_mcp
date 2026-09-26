@@ -4,12 +4,33 @@ import { flavorSpec } from "../flavors.js";
 import { availableFlavors } from "../data/manifest.js";
 import { defaultFlavor } from "../default-flavor.js";
 
-export function text(body: string) {
-  return { content: [{ type: "text" as const, text: body }] };
+/**
+ * Tool annotations. Every tool here only reads, so clients that auto-approve
+ * read-only tools can do so; the network-backed ones are flagged open-world.
+ */
+export const READ_ONLY = {
+  readOnlyHint: true,
+  destructiveHint: false,
+  idempotentHint: true,
+  openWorldHint: false,
+} as const;
+
+/** Read-only, but reaches warcraft.wiki.gg or GitHub. */
+export const READ_ONLY_NETWORK = { ...READ_ONLY, openWorldHint: true } as const;
+
+export interface ToolResult {
+  [key: string]: unknown;
+  content: Array<{ type: "text"; text: string }>;
+  isError?: boolean;
 }
 
-export function errorText(body: string) {
-  return { content: [{ type: "text" as const, text: body }], isError: true };
+export function text(body: string): ToolResult {
+  return { content: [{ type: "text", text: body }] };
+}
+
+/** A result the client should treat as a failed call. */
+export function errorText(body: string): ToolResult {
+  return { content: [{ type: "text", text: body }], isError: true };
 }
 
 /** One-line summary of every available flavor, for tool descriptions. */
@@ -36,8 +57,8 @@ export function flavorArg(description = "Which client flavor to query") {
 
 /** Wraps a tool handler so unexpected errors come back as readable text. */
 export function guard<T extends unknown[]>(
-  handler: (...args: T) => Promise<ReturnType<typeof text>>,
-): (...args: T) => Promise<ReturnType<typeof text>> {
+  handler: (...args: T) => Promise<ToolResult>,
+): (...args: T) => Promise<ToolResult> {
   return async (...args: T) => {
     try {
       return await handler(...args);

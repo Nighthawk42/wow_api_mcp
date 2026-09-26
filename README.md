@@ -67,7 +67,7 @@ Set `WOW_INSTALL_PATH` in the server environment to point at your install; the d
 
 ## Install
 
-Requires Node 20+. The server is published as [`@nighthawk42/wow-api-mcp`](https://www.npmjs.com/package/@nighthawk42/wow-api-mcp).
+Requires Node 20.11+. The server is published as [`@nighthawk42/wow-api-mcp`](https://www.npmjs.com/package/@nighthawk42/wow-api-mcp).
 
 **Claude Code**
 
@@ -102,7 +102,7 @@ npm ci && npm run build
 claude mcp add wow-api -- node /path/to/wow_api_mcp/dist/index.js
 ```
 
-On Windows, `npm run update` pulls, rebuilds, and re-registers the server across the local agent configs (see `update.ps1`).
+On Windows, `npm run update` pulls, rebuilds, and checks that the server answers an MCP `initialize` (see `update.ps1`). It never edits agent config files itself: if an `mcpm` config manager is on `PATH` it runs `mcpm sync`, otherwise it prints the entry to add.
 
 ### Environment variables
 

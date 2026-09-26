@@ -15,6 +15,7 @@ import { USER_AGENT } from "../version.js";
 export const WIKI_BASE = "https://warcraft.wiki.gg";
 const API_URL = `${WIKI_BASE}/api.php`;
 const DEFAULT_TTL_MS = 24 * 60 * 60 * 1000;
+const DEFAULT_TIMEOUT_MS = 20_000;
 
 export interface WikiSearchResult {
   title: string;
@@ -32,18 +33,22 @@ export interface WikiPage {
 export interface WikiClientOptions {
   cacheDir?: string;
   ttlMs?: number;
+  /** Per-request timeout; a stalled wiki must not hang the tool call. */
+  timeoutMs?: number;
   fetchFn?: typeof fetch;
 }
 
 export class WikiClient {
   private readonly cacheDir: string;
   private readonly ttlMs: number;
+  private readonly timeoutMs: number;
   private readonly fetchFn: typeof fetch;
   private readonly turndown: TurndownService;
 
   constructor(options: WikiClientOptions = {}) {
     this.cacheDir = options.cacheDir ?? path.join(envPaths("wow-api-mcp", { suffix: "" }).cache, "wiki");
     this.ttlMs = options.ttlMs ?? DEFAULT_TTL_MS;
+    this.timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
     this.fetchFn = options.fetchFn ?? fetch;
     this.turndown = new TurndownService({ headingStyle: "atx", codeBlockStyle: "fenced" });
     gfm(this.turndown);
@@ -74,11 +79,25 @@ export class WikiClient {
     } catch {
       // Missing or unreadable cache entry — fetch fresh.
     }
-    const response = await this.fetchFn(url, { headers: { "user-agent": USER_AGENT } });
-    if (!response.ok) throw new Error(`Wiki request failed: HTTP ${response.status} for ${url}`);
-    const body = await response.json();
+    let body: unknown;
+    try {
+      const response = await this.fetchFn(url, {
+        headers: { "user-agent": USER_AGENT },
+        signal: AbortSignal.timeout(this.timeoutMs),
+      });
+      if (!response.ok) throw new Error(`Wiki request failed: HTTP ${response.status} for ${url}`);
+      body = await response.json();
+    } catch (error) {
+      if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")) {
+        throw new Error(`Wiki request timed out after ${Math.round(this.timeoutMs / 1000)}s: ${url}`);
+      }
+      throw error;
+    }
+    // Write-then-rename so a crash or a concurrent call never leaves a torn cache entry.
     fs.mkdirSync(this.cacheDir, { recursive: true });
-    fs.writeFileSync(file, JSON.stringify({ fetchedAt: Date.now(), body }));
+    const tmp = `${file}.${process.pid}.${Date.now()}.tmp`;
+    fs.writeFileSync(tmp, JSON.stringify({ fetchedAt: Date.now(), body }));
+    fs.renameSync(tmp, file);
     return body;
   }
 

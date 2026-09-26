@@ -41,9 +41,10 @@ npm run smoke        # end-to-end: calls every tool via in-memory client
 
 ## Conventions
 
-- ESM (`type: module`), Node 20+, strict TypeScript.
+- ESM (`type: module`), Node 20.11+ (`import.meta.dirname`), strict TypeScript.
 - Tool inputs validated with zod; tool names are `snake_case`.
 - All tool responses are plain text/markdown (broadest client support).
+- Every tool declares `annotations` (`READ_ONLY`, or `READ_ONLY_NETWORK` for wiki/source tools, from `src/tools/common.ts`) and wraps its handler in `guard`, so failures come back as `isError: true` text rather than protocol errors.
 - Flavor IDs are exactly the upstream branch names — never invent aliases.
 - Keep stdout clean in server code: stdio transport owns it; log to stderr.
 
@@ -57,4 +58,5 @@ npm run smoke        # end-to-end: calls every tool via in-memory client
 - **The refresh workflow pushes to `main` directly.** No PR to merge. If you change the data format, bump `DATA_FORMAT_VERSION` and make sure `verify-data` covers the new invariant, because that job is the guard on every PR.
 - **Generated data must be identical on every platform, and bytes are not the test.** gzip output differs between zlib builds, so `writeJson` compares decompressed content and skips unchanged files; `parseDocumentationFile` normalizes line endings because a Blizzard doc string contains an escaped literal newline that CRLF checkouts would capture differently. Both are load-bearing for the daily refresh — break either and the job commits megabytes of churn every day. `tests/data-paths.test.ts` and the line-ending block in `tests/parse-docs.test.ts` pin them.
 - **`npm run typecheck` is not `npm run build`.** The build config scopes `rootDir` to `src/`; `tsconfig.check.json` is the one that also covers `scripts/` and `tests/`. Use the former for shipping, the latter for checking.
+- **Never block the event loop.** The stdio transport shares the thread with tool handlers, so a synchronous call freezes every in-flight request and the client's pings. `SourceRepoCache` runs git through async `execFile` (the first fetch per flavor takes about a minute) and dedupes concurrent preparations per flavor; keep new I/O async too.
 - **Publishing goes through `release.yml`,** whether triggered by hand or called by the refresh job. Don't add a second publish path.
