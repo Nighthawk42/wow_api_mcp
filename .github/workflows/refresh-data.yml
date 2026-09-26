@@ -111,8 +111,8 @@ jobs:
           exit 1
 
   publish:
-    # Opt-in: set the AUTO_PUBLISH repository variable to "true" and add an
-    # NPM_TOKEN secret to release a patch version whenever the data changes.
+    # Opt-in: set the AUTO_PUBLISH repository variable to "true" to release a
+    # patch version whenever the data changes (auth is npm trusted publishing).
     # The publish itself lives in release.yml so a hand-cut release and an
     # automated one go through exactly the same steps.
     needs: refresh

@@ -149,7 +149,7 @@ Requirements and options:
 - **By hand:** run the *Release* workflow. `bump` accepts `auto` (default), `patch`, `minor`, `major`, or `none`. `auto` publishes the version already in `package.json` when the registry doesn't have it yet, and otherwise moves the patch digit along.
 - **Automatically:** set the repository variable `AUTO_PUBLISH=true`. The daily refresh then calls the same workflow whenever the data actually changed, so npm tracks upstream without anyone doing anything.
 
-Both paths need an `NPM_TOKEN` secret (an npm **automation** token — a granular token works too, scoped to this package with read/write). Without it the job logs a warning and stops instead of failing.
+Both paths authenticate with npm [trusted publishing](https://docs.npmjs.com/trusted-publishers): the package trusts this repository's `release.yml` via OIDC, so there is no npm token secret to manage or leak.
 
 ## Data sources & attribution
 
