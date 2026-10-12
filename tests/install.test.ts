@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { readBuildInfo, readFlavorInfo } from "../src/install/build-info.js";
 import { decodeExeVersion, findInstallRoot, inspectInstall } from "../src/install/detect.js";
+import { manifest } from "../src/data/manifest.js";
 import { resolveFlavor } from "../src/install/resolve.js";
 import { parseToc, readAddonTocs } from "../src/install/toc.js";
 import { interfaceVersionFromBuild, parseBuild } from "../src/types.js";
@@ -91,7 +92,10 @@ describe("build parsing", () => {
 
 describe("flavor resolution", () => {
   it("prefers an exact build match", () => {
-    const result = resolveFlavor({ product: "wow_classic_era", version: "1.15.9.69722" });
+    // Read the build from the manifest so the test follows the data refresh
+    // instead of breaking every time upstream publishes a new classic_era build.
+    const { version } = manifest().flavors.find((f) => f.flavor === "classic_era")!;
+    const result = resolveFlavor({ product: "wow_classic_era", version });
     expect(result.best?.flavor).toBe("classic_era");
     expect(result.confidence).toBe("exact");
   });
