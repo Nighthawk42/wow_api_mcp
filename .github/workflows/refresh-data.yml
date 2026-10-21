@@ -114,13 +114,16 @@ jobs:
     # Opt-in: set the AUTO_PUBLISH repository variable to "true" to release a
     # patch version whenever the data changes (auth is npm trusted publishing).
     # The publish itself lives in release.yml so a hand-cut release and an
-    # automated one go through exactly the same steps.
+    # automated one go through exactly the same steps. It is dispatched rather
+    # than called: npm trusted publishing checks the workflow that started the
+    # run, and only release.yml is trusted.
     needs: refresh
     if: needs.refresh.outputs.changed == 'true' && vars.AUTO_PUBLISH == 'true'
-    uses: ./.github/workflows/release.yml
-    with:
-      bump: auto
-    secrets: inherit
+    runs-on: ubuntu-latest
     permissions:
-      contents: write
-      id-token: write
+      actions: write
+    steps:
+      - name: Dispatch release.yml
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run release.yml -R "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME" -f bump=auto
