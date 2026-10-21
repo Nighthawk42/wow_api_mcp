@@ -39,14 +39,14 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           # Pick up whatever is at the tip — notably the data commit the refresh
           # job just pushed, which is newer than the SHA that triggered this run.
           ref: ${{ github.ref_name }}
           persist-credentials: true
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
