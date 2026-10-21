@@ -35,7 +35,7 @@ On Windows, `npm run update` (`update.ps1`) pulls, rebuilds, and checks that the
 
 **Releases.** `.github/workflows/release.yml` is the only publish path. It runs build, typecheck, tests and `verify-data`, then publishes to npm with provenance, tags `v<version>`, and pushes the tag.
 - By hand: run *Release*. `bump` is `auto` (default), `patch`, `minor`, `major` or `none`. `auto` publishes the version in `package.json` if the registry lacks it, otherwise bumps the patch digit.
-- Automatically: with the repository variable `AUTO_PUBLISH=true`, the refresh job calls the same workflow whenever the data changed.
+- Automatically: with the repository variable `AUTO_PUBLISH=true`, the refresh job dispatches the same workflow (`gh workflow run`) whenever the data changed. It must stay a dispatch, not a reusable `workflow_call`: npm checks the trusted publisher against the workflow that started the run, so a call from `refresh-data.yml` fails with a 404 on publish.
 - Authentication is npm trusted publishing (OIDC) for `Nighthawk42/wow_api_mcp` + `release.yml`; there is no npm token secret. The job upgrades npm to 11.5.1+, which trusted publishing needs. Renaming `release.yml` breaks publishing until the trusted publisher on npmjs.com is updated to match.
 
 ## Layout
@@ -74,4 +74,4 @@ On Windows, `npm run update` (`update.ps1`) pulls, rebuilds, and checks that the
 - **Generated data must be identical on every platform, and bytes are not the test.** gzip output differs between zlib builds, so `writeJson` compares decompressed content and skips unchanged files; `parseDocumentationFile` normalizes line endings because a Blizzard doc string contains an escaped literal newline that CRLF checkouts would capture differently. Both are load-bearing for the daily refresh — break either and the job commits megabytes of churn every day. `tests/data-paths.test.ts` and the line-ending block in `tests/parse-docs.test.ts` pin them.
 - **`npm run typecheck` is not `npm run build`.** The build config scopes `rootDir` to `src/`; `tsconfig.check.json` is the one that also covers `scripts/` and `tests/`. Use the former for shipping, the latter for checking.
 - **Never block the event loop.** The stdio transport shares the thread with tool handlers, so a synchronous call freezes every in-flight request and the client's pings. `SourceRepoCache` runs git through async `execFile` (the first fetch per flavor takes about a minute) and dedupes concurrent preparations per flavor; keep new I/O async too.
-- **Publishing goes through `release.yml`,** whether triggered by hand or called by the refresh job. Don't add a second publish path.
+- **Publishing goes through `release.yml`,** whether triggered by hand or dispatched by the refresh job. Don't add a second publish path.
