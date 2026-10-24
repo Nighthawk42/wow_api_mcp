@@ -1,6 +1,6 @@
 {
   "name": "@nighthawk42/wow-api-mcp",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "MCP server exposing the World of Warcraft addon API (Blizzard generated documentation, FrameXML source, and Warcraft Wiki) across every wow-ui-source track — retail, PTR, beta, Classic, Classic Era and Anniversary — with automatic flavor detection from an installed game client.",
   "license": "MIT",
   "author": "Nighthawk42",
