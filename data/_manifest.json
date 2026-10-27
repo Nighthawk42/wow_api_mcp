@@ -1,6 +1,6 @@
 {
   "formatVersion": 2,
-  "generatedAt": "2026-10-23T20:16:19Z",
+  "generatedAt": "2026-10-26T23:16:20Z",
   "flavors": [
     {
       "flavor": "live",
@@ -103,13 +103,13 @@
     {
       "flavor": "classic_era",
       "branch": "classic_era",
-      "commit": "8165d4cd6e48d606369336cc3a7977902310e81e",
-      "version": "1.15.9.70003",
+      "commit": "4192ac60067fc55566182291bc67c85dd9b6794d",
+      "version": "1.15.9.70576",
       "interfaceVersion": 11509,
-      "generatedAt": "2026-09-29T14:16:02Z",
+      "generatedAt": "2026-10-26T23:16:08Z",
       "counts": {
         "systems": 534,
-        "functions": 4589,
+        "functions": 4590,
         "events": 1483,
         "tables": 1332
       }
@@ -131,13 +131,13 @@
     {
       "flavor": "classic_anniversary",
       "branch": "classic_anniversary",
-      "commit": "2cfec7c00f0f24762d5ca35a4beb1e93c0cde328",
-      "version": "2.5.6.70006",
+      "commit": "68e0a2ec559d9761dfc4e7f864c3944f9d758a49",
+      "version": "2.5.6.70577",
       "interfaceVersion": 20506,
-      "generatedAt": "2026-10-12T20:46:20Z",
+      "generatedAt": "2026-10-26T23:16:20Z",
       "counts": {
         "systems": 534,
-        "functions": 4589,
+        "functions": 4590,
         "events": 1483,
         "tables": 1332
       }
