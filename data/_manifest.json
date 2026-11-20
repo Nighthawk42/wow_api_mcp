@@ -1,6 +1,6 @@
 {
   "formatVersion": 2,
-  "generatedAt": "2026-11-18T23:46:16Z",
+  "generatedAt": "2026-11-19T22:30:57Z",
   "flavors": [
     {
       "flavor": "live",
@@ -61,10 +61,10 @@
     {
       "flavor": "classic",
       "branch": "classic",
-      "commit": "5e8845b6f3fb9a5ada84fde6e69354d9d91fae76",
-      "version": "5.5.4.70960",
+      "commit": "e171ae99b8e582ce9547bd8fc87054fe2e348f20",
+      "version": "5.5.4.71060",
       "interfaceVersion": 50504,
-      "generatedAt": "2026-11-17T15:31:17Z",
+      "generatedAt": "2026-11-19T22:30:57Z",
       "counts": {
         "systems": 533,
         "functions": 4591,
