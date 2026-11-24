@@ -1,6 +1,6 @@
 {
   "formatVersion": 2,
-  "generatedAt": "2026-11-20T23:31:00Z",
+  "generatedAt": "2026-11-24T15:31:13Z",
   "flavors": [
     {
       "flavor": "live",
@@ -61,10 +61,10 @@
     {
       "flavor": "classic",
       "branch": "classic",
-      "commit": "e171ae99b8e582ce9547bd8fc87054fe2e348f20",
-      "version": "5.5.4.71060",
+      "commit": "b440d809126599ab29ce7a85cb4be18266d48883",
+      "version": "5.5.4.71089",
       "interfaceVersion": 50504,
-      "generatedAt": "2026-11-19T22:30:57Z",
+      "generatedAt": "2026-11-24T01:15:55Z",
       "counts": {
         "systems": 533,
         "functions": 4591,
@@ -159,10 +159,10 @@
     {
       "flavor": "forever",
       "branch": "forever",
-      "commit": "734f065329cff4992835b01a84f210a297db91b6",
-      "version": "1.60.1.71037",
+      "commit": "c01a87b549bbc19e0f284c1616d18654c91297de",
+      "version": "1.60.1.71091",
       "interfaceVersion": 16001,
-      "generatedAt": "2026-11-20T18:31:10Z",
+      "generatedAt": "2026-11-24T15:31:13Z",
       "counts": {
         "systems": 642,
         "functions": 6624,
